@@ -1,4 +1,4 @@
-#miniRPEL
+# miniRPEL
 
 A small REPL (read-eval-print-loop) of mathematical expressions written in C with any dependencies.
 
