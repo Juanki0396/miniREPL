@@ -4,11 +4,13 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' 
 OUTPUT="miniREPL"
-CMD="gcc -Wall -Wextra -o ${OUTPUT} main.c"
 
-echo $CMD
-gcc -Wall -Wextra -o $OUTPUT main.c
+if [[ ! -d "./build" ]];
+then
+    mkdir build
+fi 
 
+gcc -Wall -Wextra -o ./build/$OUTPUT main.c
 
 if [[ $? == 0 ]];
 then
