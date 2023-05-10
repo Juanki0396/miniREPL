@@ -11,11 +11,18 @@ then
     mkdir build
 fi 
 
+if [[ $1 == "test" ]];
+then
+    MAIN="test.c"
+    OUTPUT="test"
+fi
+
 gcc -Wall -Wextra -o ./build/$OUTPUT $MAIN
 
 if [[ $? == 0 ]];
 then
-    echo -e "${GREEN}SUCCSES${NC}: Compilation end succesfully. Run program with: ./${OUTPUT}"
+    echo -e "${GREEN}SUCCSES${NC}: Compilation end succesfully. Runnig program with: ./${OUTPUT}"
+    ./build/$OUTPUT
 else
     echo -e "${RED}FAILED${NC}: Compilation has failed."
 fi
