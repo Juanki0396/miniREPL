@@ -1,12 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <strings.h>
 
-#define MINIREPL_IMPL
-#include "miniREPL.h"
+#include "interpreter.h"
+#include "lexer.h"
 
 #define PROGRAM_ARGS 2
 #define VERSION "0.1.0"
@@ -14,25 +13,6 @@
 #define INPUT_FORMAT " %100[^\n]"
 
 
-int parse_args(int argc, char **argv, bool *verbose, bool *help) {
-    if (argc > (PROGRAM_ARGS + 1)) {
-        errno = E2BIG;
-        return -1;
-    }
-    for (int idx = 1; idx < argc && argv[idx]; idx++) {
-        if (!strcmp(argv[idx], "-h") || !strcmp(argv[idx], "--help")) {
-            *help = true;
-        }
-        else if (!strcmp(argv[idx], "-v") || !strcmp(argv[idx], "--verbose")) {
-            *verbose = true;
-        }
-        else {
-            errno = EINVAL;
-            return -1;
-        }
-    }
-    return 0;
-}
 
 int main(int argc, char* *argv) {
     // Parsing arguments

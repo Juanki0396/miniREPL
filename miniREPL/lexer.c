@@ -1,45 +1,8 @@
-#ifndef MINIREPL_H
-#define MINIREPL_H
+#include "lexer.h"
 
-#define MINIREPL_DEF static inline
-#define DEFAULT_N_TOKENS 100
-
-#include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum token_type {
-    NUM,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    LEFT_PAR,
-    RIGHT_PAR,
-
-} token_type_e;
-
-typedef struct token {
-    token_type_e type;
-    const char *text;
-    int index;
-} token_s;
-
-typedef struct token_list {
-    size_t size;
-    size_t items;
-    token_s *array;
-} token_list_s;
-
-MINIREPL_DEF int create_token_list(token_list_s **list);
-MINIREPL_DEF int push_token(token_s tok, token_list_s *list);
-MINIREPL_DEF int pop_token(token_s *tok, token_list_s *list);
-MINIREPL_DEF int get_token(size_t idx, token_list_s *list, token_s *tok);
-MINIREPL_DEF void delete_token_list(token_list_s **list);
-    
-#define MINIREPL_IMPL
-#ifdef MINIREPL_IMPL
+#include <stdio.h>
 
 MINIREPL_DEF int create_token_list(token_list_s **list) {
     *list = (token_list_s *)malloc(sizeof(token_list_s));
@@ -58,11 +21,12 @@ MINIREPL_DEF int create_token_list(token_list_s **list) {
 MINIREPL_DEF int push_token(token_s tok, token_list_s *list) {
     if (list->items + 1 > list->size) {
         printf("List to small. Making it bigger\n");
-        list->array = (token_s *)reallocarray(list->array, list->size + DEFAULT_N_TOKENS, sizeof(token_s));
+        size_t new_size = list->size + DEFAULT_N_TOKENS;
+        list->array = (token_s *)realloc(list->array, sizeof(token_s) * new_size);
         if (list->array == NULL) {
             return -1;
         }
-        list->size = list->size + DEFAULT_N_TOKENS;
+        list->size = new_size;
         memset(&list->array[list->items], 0, sizeof(token_s) * DEFAULT_N_TOKENS);
     }
     list->items += 1;
@@ -96,5 +60,4 @@ MINIREPL_DEF void delete_token_list(token_list_s **list) {
     *list = 0;
 }
 
-#endif
-#endif
+token_list_s *tok_list = 0;
