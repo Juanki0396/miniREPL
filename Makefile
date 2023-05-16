@@ -21,9 +21,6 @@ PROGRAM = miniREPL
 SOURCES = $(wildcard $(SOURCEDIR)/*.c)
 HEADERS = $(wildcard $(SOURCEDIR)/*.h)
 OBJECTS = $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
-$(info $(SOURCES))
-$(info $(HEADERS))
-$(info $(OBJECTS))
 
 all: build_dir $(PROGRAM)
 
@@ -32,7 +29,6 @@ $(PROGRAM): $(OBJECTS)
 
 $(BUILDDIR)/%.o: $(SOURCEDIR)/%.c
 	$(CC) $(CFLAGS) $^ -o $@
-	echo hey
 
 build_dir: 
 	mkdir -p $(BUILDDIR)

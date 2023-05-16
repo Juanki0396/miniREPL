@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -7,21 +8,15 @@
 #include "interpreter.h"
 #include "lexer.h"
 
-#define PROGRAM_ARGS 2
 #define VERSION "0.1.0"
-#define MAX_INPUT_CHARS 100
-#define INPUT_FORMAT " %100[^\n]"
-
-
 
 int main(int argc, char* *argv) {
     // Parsing arguments
     printf("miniREPL "VERSION"\n");
     
-    bool verbose = false;
-    bool help = false;
+    args_s args = { .verbose = false, .help = false, .path = "" };
 
-    if (parse_args(argc, argv, &verbose, &help) == -1) {
+    if (parse_args(argc, argv, &args) == -1) {
         if (errno == EINVAL) {
             perror("ERROR parsing arguments");
             printf("Please use -h or --help for see instructions.\n");
@@ -35,32 +30,24 @@ int main(int argc, char* *argv) {
     errno = 0;
 
     // Handling help and verbose    
-    if (help) {
+    if (args.help) {
         printf("Help\n");
         return EXIT_SUCCESS;
     }
-    if (verbose) {
+    if (args.verbose) {
         printf("VERBOSE ON\n");
     }
 
-    // Main loop
-    char buffer[MAX_INPUT_CHARS + 1] = { [0 ... MAX_INPUT_CHARS - 1] = 0 };
-    while (true) {
-        // Read User input
-        printf(">>>> ");
-        errno = 0;
-        if (scanf(INPUT_FORMAT, buffer) == EOF) {
-            perror("ERROR invalid input");
-            return EXIT_FAILURE;
-        }
+    int result = 0;
+    if (!strcmp(args.path, "") && 0) {
+        result = run_file(&args);
+    }
+    else {
+        result = run_interactive(&args);
+    }
 
-        // Eval user input
-        if (!strcasecmp(buffer, "quit")) {
-            break;
-        }
-
-        // Print 
-        printf("INPUT: %s\n", buffer);
+    if (result != 0) {
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
