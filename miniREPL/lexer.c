@@ -127,8 +127,12 @@ MINIREPL_DEF void print_token_list(token_list_s *list) {
     printf("\n)\n");
 }
 
+inline char watch_n_next(const str_iter_s *iter, size_t n) {
+    return iter->str[iter->tok_start + iter->tok_len + n - 1];
+}
+
 inline char watch_next(const str_iter_s *iter) {
-    return iter->str[iter->tok_start + iter->tok_len];
+    return watch_n_next(iter, 1);
 }
 
 inline char watch_current(const str_iter_s *iter) {
@@ -235,10 +239,6 @@ MINIREPL_DEF int tokenize_program_string(const char *string, token_list_s *list)
             token_s tok = { EQ, "", iter.tok_start };
             push_token(tok, list);
             next_char(&iter);
-        } else if ( watch_current(&iter) == 'i' && watch_next(&iter) == 'f' ) {
-            token_s tok = { IF, "", iter.tok_start };
-            push_token(tok, list);
-            next_char(&iter);
         } else if ( watch_current(&iter) == '&' && watch_next(&iter) == '&' ) {
             token_s tok = { AND, "", iter.tok_start };
             push_token(tok, list);
@@ -247,6 +247,77 @@ MINIREPL_DEF int tokenize_program_string(const char *string, token_list_s *list)
             token_s tok = { OR, "", iter.tok_start };
             push_token(tok, list);
             next_char(&iter);
+        // reserved keywords tokens
+        } else if ( watch_current(&iter) == 'i' &&
+                watch_next(&iter) == 'f' &&
+                isspace(watch_n_next(&iter, 2)) ) {
+            token_s tok = { IF, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+        } else if ( watch_current(&iter) == 'i' &&
+                watch_next(&iter) == 'f' &&
+                isspace(watch_n_next(&iter, 2)) ) {
+            token_s tok = { IF, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+        } else if ( watch_current(&iter) == 'v' &&
+                watch_next(&iter) == 'a' &&
+                watch_n_next(&iter, 2) == 'r' &&
+                isspace(watch_n_next(&iter, 3)) ) {
+            token_s tok = { VAR, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+            next_char(&iter);
+        } else if ( watch_current(&iter) == 'f' &&
+                watch_next(&iter) == 'o' &&
+                watch_n_next(&iter, 2) == 'r' &&
+                isspace(watch_n_next(&iter, 3)) ) {
+            token_s tok = { FOR, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+            next_char(&iter);
+        } else if ( watch_current(&iter) == 'f' &&
+                watch_next(&iter) == 'u' &&
+                watch_n_next(&iter, 2) == 'n' &&
+                isspace(watch_n_next(&iter, 3)) ) {
+            token_s tok = { FUN, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+            next_char(&iter);
+        } else if ( watch_current(&iter) == 'n' &&
+                watch_next(&iter) == 'i' &&
+                watch_n_next(&iter, 2) == 'l' &&
+                isspace(watch_n_next(&iter, 3)) ) {
+            token_s tok = { NIL, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+            next_char(&iter);
+        } else if ( watch_current(&iter) == 'w' &&
+                watch_next(&iter) == 'h' &&
+                watch_n_next(&iter, 2) == 'i' &&
+                watch_n_next(&iter, 3) == 'l' &&
+                watch_n_next(&iter, 4) == 'e' &&
+                isspace(watch_n_next(&iter, 5)) ) {
+            token_s tok = { WHILE, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+            next_char(&iter);
+            next_char(&iter);
+            next_char(&iter);
+        } else if ( watch_current(&iter) == 'r' &&
+                watch_next(&iter) == 'e' &&
+                watch_n_next(&iter, 2) == 't' &&
+                watch_n_next(&iter, 3) == 'u' &&
+                watch_n_next(&iter, 4) == 'r' &&
+                watch_n_next(&iter, 5) == 'n' &&
+                isspace(watch_n_next(&iter, 6)) ) {
+            token_s tok = { RETURN, "", iter.tok_start };
+            push_token(tok, list);
+            next_char(&iter);
+            next_char(&iter);
+            next_char(&iter);
+            next_char(&iter);
+        // Identifyer, num and string tokens
         } else {
             return 1;
         }
