@@ -15,7 +15,7 @@ LDFLAGS =
 LDLIBS =
 
 BUILDDIR = ./build
-SOURCEDIR = ./miniREPL
+SOURCEDIR = ./src
 
 PROGRAM = miniREPL
 SOURCES = $(wildcard $(SOURCEDIR)/*.c)
