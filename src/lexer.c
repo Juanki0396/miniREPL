@@ -9,18 +9,18 @@
 #define CASE_ENUM(enum) case enum: return #enum
 
 typedef struct str_iter {
-    const char *str;
+    const char* str;
     size_t tok_start;
     size_t tok_len;
 } str_iter_s;
 
-MINIREPL_DEF const char * token_type_to_str(token_type_e token);
-MINIREPL_DEF int push_token(token_s tok, token_list_s *list);
-MINIREPL_DEF int pop_token(token_s *tok, token_list_s *list);
-MINIREPL_DEF int get_token(size_t idx, token_list_s *list, token_s *tok);
+const char* token_type_to_str(token_type_e token);
+token_list_s push_token(token_s tok, token_list_s list);
+token_s pop_token(token_list_s list);
+token_s get_token(size_t idx, token_list_s list);
 void next_token(str_iter_s *iter);
 
-MINIREPL_DEF const char * token_type_to_str(token_type_e token){
+const char * token_type_to_str(token_type_e token){
     switch(token){
         CASE_ENUM(ADD);
         CASE_ENUM(SUB);
@@ -60,66 +60,62 @@ MINIREPL_DEF const char * token_type_to_str(token_type_e token){
     }
 }
 
-MINIREPL_DEF int create_token_list(token_list_s **list) {
-    *list = (token_list_s *)malloc(sizeof(token_list_s));
-    if (list == NULL) {
-        return -1;
+token_list_s create_token_list() {
+    token_list_s list = { 
+        .size = DEFAULT_N_TOKENS, 
+        .items = 0,
+        .array =(token_s *)calloc(DEFAULT_N_TOKENS, sizeof(token_s)),
+    };
+    if (list.array == NULL) {
+        return INVALID_TOKEN_LIST;
     }
-    (*list)->size = DEFAULT_N_TOKENS;
-    (*list)->items = 0;
-    (*list)->array = (token_s *)calloc(DEFAULT_N_TOKENS, sizeof(token_s));
-    if ((*list)->array == NULL) {
-        return -1;
-    }
-    return 0;
+    return list;
 }
 
-MINIREPL_DEF int push_token(token_s tok, token_list_s *list) {
-    if (list->items + 1 > list->size) {
+token_list_s push_token(token_s tok, token_list_s list) {
+    if (list.items + 1 > list.size) {
         printf("List to small. Making it bigger\n");
-        size_t new_size = list->size + DEFAULT_N_TOKENS;
-        list->array = (token_s *)realloc(list->array, sizeof(token_s) * new_size);
-        if (list->array == NULL) {
-            return -1;
+        size_t new_size = list.size + DEFAULT_N_TOKENS;
+        list.array = (token_s *)realloc(list.array, sizeof(token_s) * new_size);
+        if (list.array == NULL) {
+            return INVALID_TOKEN_LIST;
         }
-        list->size = new_size;
-        memset(&list->array[list->items], 0, sizeof(token_s) * DEFAULT_N_TOKENS);
+        list.size = new_size;
+        memset(&list.array[list.items], 0, sizeof(token_s) * DEFAULT_N_TOKENS);
     }
-    list->items += 1;
+    list.items += 1;
     printf("Inserting token\n");
-    list->array[list->items - 1] = tok;
-    return 0;
+    list.array[list.items - 1] = tok;
+    return list;
 }
 
-MINIREPL_DEF int pop_token(token_s *tok, token_list_s *list) {
-    if (list->items <= 0) {
-        return -1;
+token_s pop_token(token_list_s list) {
+    if (list.items <= 0) {
+        return INVALID_TOKEN;
     }
-    memcpy(tok, &list->array[list->items - 1], sizeof(token_s));
-    memset(&list->array[list->items - 1], 0, sizeof(token_s));
-    list->items -= 1;
-    return 0;
+    token_s tok = list.array[list.items - 1];
+    memset(&list.array[list.items - 1], 0, sizeof(token_s));
+    list.items -= 1;
+    return tok;
 }
 
-MINIREPL_DEF int get_token(size_t idx, token_list_s *list, token_s *tok) {
-    if (idx >= list->items) {
-        return -1;
+token_s get_token(size_t idx, token_list_s list) {
+    if (idx >= list.items) {
+        return INVALID_TOKEN;
     }
-    memcpy(tok, &list->array[idx], sizeof(token_s));
-    return 0;
+    return list.array[idx];
 }
 
-MINIREPL_DEF void delete_token_list(token_list_s **list) {
-    free((*list)->array);
-    (*list)->array = 0;
-    free(*list);
-    *list = 0;
+void delete_token_list(token_list_s list) {
+    if (list.array == NULL) {
+        free(list.array);
+    }
 }
 
-MINIREPL_DEF void print_token_list(token_list_s *list) {
+void print_token_list(token_list_s list) {
     printf("(\n\t");
-    for(size_t i = 1; i <= list->items; i++) {
-       printf(" %s ", token_type_to_str(list->array[i].type));
+    for(size_t i = 1; i <= list.items; i++) {
+       printf(" %s ", token_type_to_str(list.array[i].type));
        if (i % 5 == 0) {
            printf("\n\t");
        }
@@ -159,137 +155,141 @@ inline const char * current_token(str_iter_s *iter) {
     return &iter->str[iter->tok_start];
 }
 
-MINIREPL_DEF int tokenize_program_string(const char *string, token_list_s *list) {
+token_list_s tokenize_program_string(const char* string) {
+    token_list_s list = create_token_list();
+    if (!list.valid) {
+        return INVALID_TOKEN_LIST;
+    }
     size_t len = strlen(string);
     str_iter_s iter = { .str = string, .tok_start = 0, .tok_len = 1, };
     while ( iter.tok_start < len ){
         // 1 char tokens
         if ( watch_current(&iter) == '+' ) {
-            token_s tok = { ADD, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { ADD, "", iter.tok_start, 1 };
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '-' ) {
-            token_s tok = { SUB, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { SUB, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '*' ) {
-            token_s tok = { MUL, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { MUL, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '/' ) {
-            token_s tok = { DIV, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { DIV, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '%' ) {
-            token_s tok = { MOD, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { MOD, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '=' ) {
-            token_s tok = { ASSIGN, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { ASSIGN, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '!' ) {
-            token_s tok = { NEG, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { NEG, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '>' ) {
-            token_s tok = { MORE, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { MORE, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '<' ) {
-            token_s tok = { LESS, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { LESS, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '(' ) {
-            token_s tok = { LEFT_PAR, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { LEFT_PAR, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == ')' ) {
-            token_s tok = { RIGHT_PAR, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { RIGHT_PAR, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '{' ) {
-            token_s tok = { LEFT_BRA, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { LEFT_BRA, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == '}' ) {
-            token_s tok = { RIGHT_BRA, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { RIGHT_BRA, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         } else if ( watch_current(&iter) == ';' ) {
-            token_s tok = { END_STATEMENT, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { END_STATEMENT, "", iter.tok_start, 1};
+            list = push_token(tok, list);
         // 2 char tokens
         } else if ( watch_current(&iter) == '+' && watch_next(&iter) == '=' ) {
-            token_s tok = { ADDEQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { ADDEQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '-' && watch_next(&iter) == '=' ) {
-            token_s tok = { SUBEQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { SUBEQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '*' && watch_next(&iter) == '=' ) {
-            token_s tok = { MULEQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { MULEQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '/' && watch_next(&iter) == '=' ) {
-            token_s tok = { DIVEQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { DIVEQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '%' && watch_next(&iter) == '=' ) {
-            token_s tok = { MODEQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { MODEQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '<' && watch_next(&iter) == '=' ) {
-            token_s tok = { LESSEQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { LESSEQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '>' && watch_next(&iter) == '=' ) {
-            token_s tok = { MOREEQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { MOREEQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '=' && watch_next(&iter) == '=' ) {
-            token_s tok = { EQ, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { EQ, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '&' && watch_next(&iter) == '&' ) {
-            token_s tok = { AND, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { AND, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == '|' && watch_next(&iter) == '|' ) {
-            token_s tok = { OR, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { OR, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         // reserved keywords tokens
         } else if ( watch_current(&iter) == 'i' &&
                 watch_next(&iter) == 'f' &&
                 isspace(watch_n_next(&iter, 2)) ) {
-            token_s tok = { IF, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { IF, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == 'i' &&
                 watch_next(&iter) == 'f' &&
                 isspace(watch_n_next(&iter, 2)) ) {
-            token_s tok = { IF, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { IF, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
         } else if ( watch_current(&iter) == 'v' &&
                 watch_next(&iter) == 'a' &&
                 watch_n_next(&iter, 2) == 'r' &&
                 isspace(watch_n_next(&iter, 3)) ) {
-            token_s tok = { VAR, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { VAR, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
             next_char(&iter);
         } else if ( watch_current(&iter) == 'f' &&
                 watch_next(&iter) == 'o' &&
                 watch_n_next(&iter, 2) == 'r' &&
                 isspace(watch_n_next(&iter, 3)) ) {
-            token_s tok = { FOR, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { FOR, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
             next_char(&iter);
         } else if ( watch_current(&iter) == 'f' &&
                 watch_next(&iter) == 'u' &&
                 watch_n_next(&iter, 2) == 'n' &&
                 isspace(watch_n_next(&iter, 3)) ) {
-            token_s tok = { FUN, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { FUN, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
             next_char(&iter);
         } else if ( watch_current(&iter) == 'n' &&
                 watch_next(&iter) == 'i' &&
                 watch_n_next(&iter, 2) == 'l' &&
                 isspace(watch_n_next(&iter, 3)) ) {
-            token_s tok = { NIL, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { NIL, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
             next_char(&iter);
         } else if ( watch_current(&iter) == 'w' &&
@@ -298,8 +298,8 @@ MINIREPL_DEF int tokenize_program_string(const char *string, token_list_s *list)
                 watch_n_next(&iter, 3) == 'l' &&
                 watch_n_next(&iter, 4) == 'e' &&
                 isspace(watch_n_next(&iter, 5)) ) {
-            token_s tok = { WHILE, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { WHILE, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
             next_char(&iter);
             next_char(&iter);
@@ -311,18 +311,18 @@ MINIREPL_DEF int tokenize_program_string(const char *string, token_list_s *list)
                 watch_n_next(&iter, 4) == 'r' &&
                 watch_n_next(&iter, 5) == 'n' &&
                 isspace(watch_n_next(&iter, 6)) ) {
-            token_s tok = { RETURN, "", iter.tok_start };
-            push_token(tok, list);
+            token_s tok = { RETURN, "", iter.tok_start, 1};
+            list = push_token(tok, list);
             next_char(&iter);
             next_char(&iter);
             next_char(&iter);
             next_char(&iter);
         // Identifyer, num and string tokens
         } else {
-            return 1;
+            return INVALID_TOKEN_LIST;
         }
         next_token(&iter);
     }
-    return 0;
+    return list;
 }
 

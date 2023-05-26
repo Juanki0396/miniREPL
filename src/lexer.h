@@ -5,6 +5,7 @@
 #define DEFAULT_N_TOKENS 100
 
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef enum token_type {
     // 1 char tokens
@@ -24,19 +25,29 @@ typedef enum token_type {
 
 typedef struct token {
     token_type_e type;
-    const char *text;
+    const char* text;
     size_t index;
+    bool valid;
 } token_s;
 
 typedef struct token_list {
     size_t size;
     size_t items;
-    token_s *array;
+    token_s* array;
+    bool valid;
 } token_list_s;
 
-MINIREPL_DEF int create_token_list(token_list_s **list);
-MINIREPL_DEF void delete_token_list(token_list_s **list);
-MINIREPL_DEF void print_token_list(token_list_s *list);
-MINIREPL_DEF int tokenize_program_string(const char *string, token_list_s *list);
+#define LEXER_ERR int
+#define LEXER_SUCCES 0
+#define ALLOC_ERR 1
+#define SYNTAX_ERR 2
+
+#define INVALID_TOKEN (token_s) { 0 }
+#define INVALID_TOKEN_LIST (token_list_s) { 0 }
+
+token_list_s create_token_list(void);
+void delete_token_list(token_list_s list);
+void print_token_list(token_list_s list);
+token_list_s tokenize_program_string(const char* string);
 
 #endif
