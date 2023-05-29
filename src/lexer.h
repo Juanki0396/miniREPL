@@ -16,19 +16,24 @@ typedef enum token_type {
     ADDEQ, SUBEQ, MULEQ, DIVEQ, MODEQ, LESSEQ, MOREEQ, EQ, NOTEQ,
 
     // Reserve words tokens
-    IF, VAR, FOR, WHILE, FUN, RETURN, AND, OR,
+    IF, VAR, FOR, WHILE, FUN, RETURN, AND, OR, NIL,
 
     // multiple char token
     IDENTIFYER,
 
     // Literals
-    NUM, STRING, NIL
+    NUM, STRING
 
 } token_type_e;
 
+typedef union data {
+    float num;
+    const char* str;
+} data_u;
+
 typedef struct token {
     token_type_e type;
-    const char* text;
+    data_u text;
     size_t index;
     bool valid; // true is ok, false cannot be used
 } token_s;

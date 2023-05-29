@@ -4,6 +4,7 @@
 #include <strings.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "interpreter.h"
 #include "lexer.h"
@@ -55,29 +56,24 @@ int run_file(args_s *args) {
 
 int run_interactive(args_s *args) {
     char buffer[MAX_INPUT_CHARS + 1] = { [0 ... MAX_INPUT_CHARS - 1] = 0 };
+    token_list_s list = create_token_list();
     while (true) {
         // Read User input
         printf(">>>> ");
         errno = 0;
         if (scanf(INPUT_FORMAT, buffer) == EOF) {
             perror("ERROR invalid input");
-            return 1;
+            exit(1);
         }
+
+        printf("%s\n", buffer);
 
         // Eval user input
         if (!strcasecmp(buffer, "quit")) {
             break;
         }
 
-        token_list_s *list;
-        if (create_token_list(&list) != 0) {
-            perror("ERROR Cannot allocate memory for the parser.");
-            return 1;
-        }
-        if (tokenize_program_string(buffer, list) != 0) {
-            perror("ERROR Invalid code.");
-            return 1;
-        }
+        list = tokenize_program_string(buffer, list) ;
 
         // Print 
         if ( args->verbose ) {
