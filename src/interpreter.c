@@ -17,6 +17,11 @@ int parse_args(int argc, char **argv, args_s *args) {
         errno = E2BIG;
         return -1;
     }
+
+    if (argc == 1) {
+        return 0;
+    }
+
     for (int idx = 1; idx < (argc - 1) && argv[idx]; idx++) {
         if (!strcmp(argv[idx], "-h") || !strcmp(argv[idx], "--help")) {
             args->help = true;

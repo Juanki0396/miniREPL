@@ -119,9 +119,9 @@ void delete_token_list(token_list_s list) {
 
 void print_token_list(token_list_s list) {
     printf("(\n\t");
-    for(size_t i = 1; i <= list.items; i++) {
+    for(size_t i = 0; i < list.items; i++) {
         printf(" %s ", token_type_to_str(list.array[i].type));
-        if (i % 5 == 0) {
+        if ((i + 1) % 5 == 0 ) {
             printf("\n\t");
         }
     }
@@ -142,7 +142,6 @@ typedef struct str_iter {
 str_iter_s create_iter(const char* str);
 char next(str_iter_s* iter);
 bool match(str_iter_s* iter, char c);
-void reset_token(str_iter_s* iter);
 void ignore_comment(str_iter_s* iter);
 token_list_s push_string(str_iter_s* iter, token_list_s list);
 token_list_s push_num(str_iter_s* iter, token_list_s list);
@@ -155,7 +154,7 @@ str_iter_s create_iter(const char* str){
             .line_n = 0,
             .line_start = 0,
             .tok_start = 0,
-            .tok_len = 0,
+            .tok_len = 1,
             .valid = true,
     };
 }
@@ -176,6 +175,11 @@ static inline bool isidentchar(char c) {
     return (isalnum(c) || c == '_') ? true : false;
 }
 
+static inline void add_line(str_iter_s* iter) {
+    iter->line_n += 1;
+    iter->line_start = iter->tok_start + iter->tok_len;
+}
+
 char next(str_iter_s *iter) {
     if ( get_current_char(*iter) == 0) {
         return 0;
@@ -193,19 +197,13 @@ bool match(str_iter_s* iter, char c) {
     }
 }
 
-void reset_token(str_iter_s* iter) {
-    iter->tok_start += iter->tok_len;
-    iter->tok_len = 1;
-}
-
 void ignore_comment(str_iter_s* iter) {
     while (next(iter) != '\n') {
         if (get_current_char(*iter) == 0) {
             return;
         }
     }
-    iter->line_n += 1;
-    iter->line_start = iter->tok_start + iter->tok_len;
+    add_line(iter);
 }
 
 #define STR_BUFFER_SIZE 64
@@ -224,8 +222,7 @@ token_list_s push_string(str_iter_s* iter, token_list_s list) {
             print_error(*iter, "Unclosed string");
             exit(1);
         } else if (get_current_char(*iter) == '\n') {
-            iter->line_n += 1;
-            iter->line_start = iter->tok_start + iter->tok_len;
+            add_line(iter);
         } else {
             if (idx == size - 1) {
                 size += STR_BUFFER_SIZE;
@@ -293,21 +290,21 @@ token_list_s push_keyword_or_identifier(str_iter_s* iter, token_list_s list) {
     memcpy(word, &iter->str[iter->tok_start], iter->tok_len);
     if (strcmp(word, "and")  == 0) {
         return push_token((token_s){ AND, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "def")) {
+    } else if (strcmp(word, "def") == 0) {
         return push_token((token_s){ FUN, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "for")) {
+    } else if (strcmp(word, "for") == 0) {
         return push_token((token_s){ FOR, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "if")) {
+    } else if (strcmp(word, "if") == 0) {
         return push_token((token_s){ IF, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "nil")) {
+    } else if (strcmp(word, "nil") == 0) {
         return push_token((token_s){ NIL, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "or")) {
+    } else if (strcmp(word, "or") == 0) {
         return push_token((token_s){ OR, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "return")) {
+    } else if (strcmp(word, "return") == 0) {
         return push_token((token_s){ RETURN, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "var")) {
+    } else if (strcmp(word, "var") == 0) {
         return push_token((token_s){ VAR, { 0 }, iter->tok_start, 1}, list);
-    } else if (strcmp(word, "while")) {
+    } else if (strcmp(word, "while") == 0) {
         return push_token((token_s){ WHILE, { 0 }, iter->tok_start, 1}, list);
     } else {
         return push_token((token_s){ IDENTIFYER, { .str=word }, iter->tok_start, 1}, list);
@@ -379,6 +376,12 @@ token_list_s tokenize_program_string(const char* string, token_list_s list) {
             case '"':
                 list = push_string(&iter, list);
                 break;
+            case '\n':
+                add_line(&iter);
+                break;
+            case ' ':
+            case '\t':
+                break;
             default: 
                 if (isdigit(c)) {
                     list = push_num(&iter, list);
@@ -390,7 +393,8 @@ token_list_s tokenize_program_string(const char* string, token_list_s list) {
                 };
                 break;
         }
-        reset_token(&iter);
+        iter.tok_start += iter.tok_len;
+        iter.tok_len = 0;
     }
     return list;
 }
