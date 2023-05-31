@@ -8,11 +8,12 @@
 typedef struct args {
     bool verbose;
     bool help;
+    bool has_path;
     const char *path;
 } args_s;
 
-int parse_args(int argc, char **argv, args_s *args);
-int run_file(args_s *args);
-int run_interactive(args_s *args);
+args_s parse_args(int argc, char **argv);
+int run_file(args_s args);
+int run_interactive(args_s args);
 
 #endif

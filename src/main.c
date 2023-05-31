@@ -10,24 +10,11 @@
 
 #define VERSION "0.1.0"
 
-int main(int argc, char* *argv) {
+int main(int argc, char** argv) {
     // Parsing arguments
     printf("miniREPL "VERSION"\n");
     
-    args_s args = { .verbose = false, .help = false, .path = "" };
-
-    if (parse_args(argc, argv, &args) == -1) {
-        if (errno == EINVAL) {
-            perror("ERROR parsing arguments");
-            printf("Please use -h or --help for see instructions.\n");
-        }
-        else if (errno == E2BIG) {
-            perror("ERROR parsing arguments");
-            printf("Please use -h or --help for see instructions.\n");
-        }
-        return EXIT_FAILURE;
-    }
-    errno = 0;
+    args_s args = parse_args(argc, argv);
 
     // Handling help and verbose    
     if (args.help) {
@@ -39,11 +26,11 @@ int main(int argc, char* *argv) {
     }
 
     int result = 0;
-    if (!strcmp(args.path, "") && 0) {
-        result = run_file(&args);
+    if (args.has_path) {
+        result = run_file(args);
     }
     else {
-        result = run_interactive(&args);
+        result = run_interactive(args);
     }
 
     if (result != 0) {

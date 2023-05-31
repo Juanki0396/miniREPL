@@ -78,7 +78,6 @@ token_list_s create_token_list() {
 
 token_list_s push_token(token_s tok, token_list_s list) {
     if (list.items + 1 > list.size) {
-        printf("List to small. Making it bigger\n");
         size_t new_size = list.size + DEFAULT_N_TOKENS;
         list.array = (token_s *)realloc(list.array, sizeof(token_s) * new_size);
         if (list.array == NULL) {
@@ -89,7 +88,6 @@ token_list_s push_token(token_s tok, token_list_s list) {
         memset(&list.array[list.items], 0, sizeof(token_s) * DEFAULT_N_TOKENS);
     }
     list.items += 1;
-    printf("Inserting token\n");
     list.array[list.items - 1] = tok;
     return list;
 }
