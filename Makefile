@@ -1,6 +1,6 @@
 CC      = gcc
 SFLAGS  = -std=c11
-GFLAGS  = -g
+GFLAGS  = 
 OFLAGS  = -O3
 WFLAG1  = -Wall
 WFLAG2  = -Wextra
@@ -14,8 +14,17 @@ CFLAGS = -c $(SFLAGS) $(GFLAGS) $(OFLAGS) $(WFLAGS) $(UFLAGS)
 LDFLAGS =
 LDLIBS =
 
-BUILDDIR = ./build
+DEBUG =
+
+BUILDMASTERDIR = ./build
 SOURCEDIR = ./src
+ifdef DEBUG
+	BUILDDIR = $(BUILDMASTERDIR)/debug
+	GFLAGS = -g
+	OFLAGS = -O0
+else
+	BUILDDIR := $(BUILDMASTERDIR)/release
+endif
 
 PROGRAM = miniREPL
 SOURCES = $(wildcard $(SOURCEDIR)/*.c)
@@ -34,4 +43,4 @@ build_dir:
 	mkdir -p $(BUILDDIR)
 
 clean:
-	rm -rf $(BUILDDIR)
+	rm -rf $(BUILDMASTERDIR)
